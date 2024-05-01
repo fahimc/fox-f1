@@ -13,6 +13,16 @@ let recognition = new SpeechRecognition();
 const audio = new Audio("sounds/voice-button.mp3");
 const audioEnd = new Audio("sounds/voice-button-end.mp3");
 const thinkingAudio = new Audio("voice/givemeasec.wav");
+const thinkingAudio2 = new Audio("voice/takealook.wav");
+const thinkingAudio3 = new Audio("voice/havealook.wav");
+const thinkingAudio4 = new Audio("voice/check.wav");
+const audioList = [
+  thinkingAudio,
+  thinkingAudio2,
+  thinkingAudio3,
+  thinkingAudio4,
+];
+let currentThinkAudioIndex = 0;
 
 const timeElement = document.querySelector(".time");
 setInterval(() => {
@@ -84,7 +94,11 @@ let timer;
 
   async function generateText(input) {
     setTimeout(() => {
-      thinkingAudio.play();
+      if (currentThinkAudioIndex >= audioList.length)
+        currentThinkAudioIndex = 0;
+      currentThinkAudioIndex++;
+      const randomAudio = audioList[currentThinkAudioIndex];
+      randomAudio.play();
     }, 1000);
     document.querySelector(".response").textContent = "...thinking";
     // Define the list of messages
