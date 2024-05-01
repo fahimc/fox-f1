@@ -114,8 +114,8 @@ button {
 }
 @media (min-width: 801px) {
   .logo {
-    width: 50vh;
-    height: 50vh;
+    width: 150px;
+    height: 150px;
   }
 }
 @-webkit-keyframes bounce {

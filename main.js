@@ -5,6 +5,10 @@ import {
 } from "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1";
 env.allowLocalModels = false;
 
+const SpeechRecognition =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = new SpeechRecognition();
+
 const timeElement = document.querySelector(".time");
 setInterval(() => {
   const currentTime = new Date();
@@ -40,16 +44,15 @@ let timer;
   );
   document.querySelector(".loading-message").style.display = "none";
   document.querySelector(".progress-bar").style.display = "none";
-  generateText("whats your name");
-  const speechButton = document.querySelector("#speech-button");
-  let recognition;
+  document.querySelector(".response").textContent = "Hold the button to speak.";
 
+  const speechButton = document.querySelector("#speech-button");
+
+  speechButton.addEventListener("touchstart", startSpeechRecognition);
+  speechButton.addEventListener("touchend", stopSpeechRecognition);
   speechButton.addEventListener("mousedown", startSpeechRecognition);
   speechButton.addEventListener("mouseup", stopSpeechRecognition);
 
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
-  recognition = new SpeechRecognition();
   recognition.addEventListener("result", handleSpeechResult);
   function startSpeechRecognition() {
     document.querySelector(".response").textContent = "";
@@ -85,15 +88,17 @@ let timer;
       add_generation_prompt: true,
     });
 
-    // Generate a response
-    const result = await generator(prompt, {
-      max_new_tokens: 100,
-      temperature: 0.7,
-      do_sample: false,
-      top_k: 50,
-    });
-    console.log(result[0].generated_text.split("assistant\n")[1]);
-    const response = result[0].generated_text.split("assistant\n")[1];
-    document.querySelector(".response").textContent = response;
+    setTimeout(async () => {
+      // Generate a response
+      const result = await generator(prompt, {
+        max_new_tokens: 100,
+        temperature: 0.7,
+        do_sample: false,
+        top_k: 50,
+      });
+      console.log(result[0].generated_text.split("assistant\n")[1]);
+      const response = result[0].generated_text.split("assistant\n")[1];
+      document.querySelector(".response").textContent = response;
+    }, 1000);
   }
 })();
