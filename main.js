@@ -9,6 +9,11 @@ const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = new SpeechRecognition();
 
+// Preload the sound effect
+const audio = new Audio("sounds/voice-button.mp3");
+const audioEnd = new Audio("sounds/voice-button-end.mp3");
+const thinkingAudio = new Audio("voice/givemeasec.wav");
+
 const timeElement = document.querySelector(".time");
 setInterval(() => {
   const currentTime = new Date();
@@ -57,11 +62,14 @@ let timer;
   function startSpeechRecognition() {
     document.querySelector(".response").textContent = "";
     recognition.start();
+    // Play the sound effect
+    audio.play();
   }
 
   function stopSpeechRecognition() {
     if (recognition) {
       recognition.stop();
+      audioEnd.play();
       // recognition.removeEventListener("result", handleSpeechResult);
     }
   }
@@ -75,6 +83,9 @@ let timer;
   }
 
   async function generateText(input) {
+    setTimeout(() => {
+      thinkingAudio.play();
+    }, 1000);
     document.querySelector(".response").textContent = "...thinking";
     // Define the list of messages
     const messages = [
