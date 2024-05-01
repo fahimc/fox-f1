@@ -93,13 +93,11 @@ let timer;
   }
 
   async function generateText(input) {
-    setTimeout(() => {
-      if (currentThinkAudioIndex >= audioList.length)
-        currentThinkAudioIndex = 0;
-      currentThinkAudioIndex++;
-      const randomAudio = audioList[currentThinkAudioIndex];
-      randomAudio.play();
-    }, 1000);
+    if (currentThinkAudioIndex >= audioList.length) currentThinkAudioIndex = 0;
+    currentThinkAudioIndex++;
+    const randomAudio = audioList[currentThinkAudioIndex];
+    randomAudio.play();
+
     document.querySelector(".response").textContent = "...thinking";
     // Define the list of messages
     const messages = [
