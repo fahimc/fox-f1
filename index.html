@@ -8,10 +8,10 @@
   </head>
   <body>
     <div class="container">
-      <div class="main">
+      <div class="main hide">
         <div class="time"></div>
         <div class="logo-container">
-          <img class="logo" src="logo.png" />
+          <img class="logo animate" src="logo.png" />
         </div>
         <div class="content">
           <div class="loading-message">loading</div>
@@ -21,7 +21,22 @@
           <div class="response"></div>
         </div>
       </div>
-      <div class="side"><button id="speech-button"></button></div>
+      <div class="setup-container">
+        <div class="screen welcome-screen">
+          <h1>Welcome to Fox</h1>
+          <img class="logo" src="logo.png" />
+          <button id="setup-button">setup</button>
+        </div>
+        <div class="screen settings-screen hide">
+          <h1>Setup</h1>
+          <label>Open AI Key</label>
+          <input id="open-ai-key" />
+          <button id="save-settings">save</button>
+        </div>
+      </div>
+      <div class="side">
+        <button id="speech-button" class="circle-button"></button>
+      </div>
     </div>
 
     <script type="module" src="/main.js"></script>

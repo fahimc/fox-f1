@@ -24,6 +24,8 @@ const audioList = [
 ];
 let currentThinkAudioIndex = 0;
 
+const setupButton = document.querySelector("#setup-button");
+const saveSettingsButton = document.querySelector("#save-settings");
 const timeElement = document.querySelector(".time");
 setInterval(() => {
   const currentTime = new Date();
@@ -33,6 +35,39 @@ setInterval(() => {
   const formattedTime = `${hours}:${minutes}`;
   timeElement.textContent = formattedTime;
 }, 1000);
+
+function hideScreens(id) {
+  const screens = document.querySelectorAll(".screen");
+  screens.forEach((screen) => {
+    if (!screen.classList.contains(id)) screen.classList.add("hide");
+  });
+}
+function showScreens(id) {
+  const screens = document.querySelectorAll(".screen");
+  screens.forEach((screen) => {
+    if (screen.classList.contains(id)) {
+      screen.classList.remove("hide");
+    }
+  });
+}
+
+if (localStorage.getItem("open-ai-key")) {
+  hideScreens("");
+  document.querySelector(".main").classList.remove("hide");
+  document.querySelector(".setup-container").classList.add("hide");
+}
+
+saveSettingsButton.addEventListener("click", () => {
+  const keyValue = document.querySelector("#open-ai-key").value;
+  if (!keyValue) return;
+  console.log("Key Value:", keyValue);
+  localStorage.setItem("open-ai-key", keyValue);
+});
+
+setupButton.addEventListener("click", () => {
+  hideScreens("settings-screen");
+  showScreens("settings-screen");
+});
 
 const progressElement = document.querySelector(".progress");
 let progress = 0;

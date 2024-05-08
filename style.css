@@ -6,6 +6,8 @@
 :root {
   --black: #000000;
   --orange: #e60504;
+  --purple: #6f01ec;
+  --purple-dark: #5f00ce;
 }
 html {
   margin: 0;
@@ -25,18 +27,19 @@ body {
   color: white;
 }
 .container {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: flex-start;
   height: 100%;
   width: 100%;
-  border: var(--orange) solid 20px;
+  border: var(--purple) solid 20px;
   border-radius: 40px;
   box-sizing: border-box;
   flex-direction: column;
   max-width: 500px;
 }
-button {
+.circle-button {
   display: block;
   text-decoration: none;
   background-color: #f7f7f7;
@@ -68,7 +71,7 @@ button {
   align-items: center;
 
   width: 100%;
-  background-color: var(--orange);
+  background-color: var(--purple);
 }
 .main {
   width: 100%;
@@ -82,6 +85,8 @@ button {
 .logo {
   width: 30vw;
   height: 30vw;
+}
+.logo.animate {
   animation-name: bounce;
   animation-duration: 3s;
   animation-direction: alternate;
@@ -112,8 +117,45 @@ button {
   background-color: white;
   border-radius: 10px;
 }
+.hide {
+  display: none !important;
+}
+.setup-container {
+  width: 100%;
+  flex: 1;
+  text-align: center;
+  padding: 50px;
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.screen {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  row-gap: 20px;
+}
+.setup-container button {
+  background-color: var(--purple);
+  border: 0;
+  border-radius: 20px;
+  padding: 10px 20px;
+  color: white;
+  cursor: pointer;
+}
+.setup-container button:hover {
+  background-color: var(--purple-dark);
+}
+input {
+  border-radius: 20px;
+  border-color: white;
+  background-color: #000000;
+  color: white;
+}
 @media (min-width: 801px) {
-  .logo {
+  .logo.animate {
     width: 150px;
     height: 150px;
   }
