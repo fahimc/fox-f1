@@ -4,7 +4,8 @@ import {
   env,
 } from "https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1";
 env.allowLocalModels = false;
-
+import { OpenAi } from "./open-ai.js";
+let openAiInstance;
 const SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = new SpeechRecognition();
@@ -17,9 +18,9 @@ const thinkingAudio2 = new Audio("voice/takealook.wav");
 const thinkingAudio3 = new Audio("voice/havealook.wav");
 const thinkingAudio4 = new Audio("voice/check.wav");
 const audioList = [
-  thinkingAudio,
-  thinkingAudio2,
-  thinkingAudio3,
+  // thinkingAudio,
+  // thinkingAudio2,
+  // thinkingAudio3,
   thinkingAudio4,
 ];
 let currentThinkAudioIndex = 0;
@@ -50,11 +51,14 @@ function showScreens(id) {
     }
   });
 }
-
-if (localStorage.getItem("open-ai-key")) {
+function readyScreen() {
   hideScreens("");
   document.querySelector(".main").classList.remove("hide");
   document.querySelector(".setup-container").classList.add("hide");
+}
+if (localStorage.getItem("open-ai-key")) {
+  readyScreen();
+  openAiInstance = new OpenAi();
 }
 
 saveSettingsButton.addEventListener("click", () => {
@@ -62,6 +66,8 @@ saveSettingsButton.addEventListener("click", () => {
   if (!keyValue) return;
   console.log("Key Value:", keyValue);
   localStorage.setItem("open-ai-key", keyValue);
+  readyScreen();
+  openAiInstance = new OpenAi();
 });
 
 setupButton.addEventListener("click", () => {
@@ -97,12 +103,19 @@ let timer;
   document.querySelector(".response").textContent = "Hold the button to speak.";
 
   const speechButton = document.querySelector("#speech-button");
+  const speechStopButton = document.querySelector("#speech-stop-button");
 
   speechButton.addEventListener("touchstart", startSpeechRecognition);
   speechButton.addEventListener("touchend", stopSpeechRecognition);
   speechButton.addEventListener("mousedown", startSpeechRecognition);
   speechButton.addEventListener("mouseup", stopSpeechRecognition);
 
+  speechStopButton.addEventListener("touchstart", () =>
+    openAiInstance.stopAudio()
+  );
+  speechStopButton.addEventListener("mousedown", () =>
+    openAiInstance.stopAudio()
+  );
   recognition.addEventListener("result", handleSpeechResult);
   function startSpeechRecognition() {
     document.querySelector(".response").textContent = "";
@@ -113,8 +126,10 @@ let timer;
 
   function stopSpeechRecognition() {
     if (recognition) {
-      recognition.stop();
-      audioEnd.play();
+      setTimeout(() => {
+        recognition.stop();
+        audioEnd.play();
+      }, 1000);
       // recognition.removeEventListener("result", handleSpeechResult);
     }
   }
@@ -128,35 +143,39 @@ let timer;
   }
 
   async function generateText(input) {
-    if (currentThinkAudioIndex >= audioList.length) currentThinkAudioIndex = 0;
     currentThinkAudioIndex++;
+    if (currentThinkAudioIndex >= audioList.length) currentThinkAudioIndex = 0;
     const randomAudio = audioList[currentThinkAudioIndex];
     randomAudio.play();
 
-    document.querySelector(".response").textContent = "...thinking";
-    // Define the list of messages
-    const messages = [
-      { role: "system", content: "You are a friendly assistant." },
-      { role: "user", content: input },
-    ];
+    document.querySelector(
+      ".response"
+    ).innerHTML = `<p>${input}?</p><p>...thinking</p>`;
+    // // Define the list of messages
+    // const messages = [
+    //   { role: "system", content: "You are a friendly assistant." },
+    //   { role: "user", content: input },
+    // ];
 
-    // Construct the prompt
-    const prompt = generator.tokenizer.apply_chat_template(messages, {
-      tokenize: false,
-      add_generation_prompt: true,
-    });
+    // // Construct the prompt
+    // const prompt = generator.tokenizer.apply_chat_template(messages, {
+    //   tokenize: false,
+    //   add_generation_prompt: true,
+    // });
 
     setTimeout(async () => {
+      const response1 = await openAiInstance.message(input);
+      console.log(response1);
       // Generate a response
-      const result = await generator(prompt, {
-        max_new_tokens: 100,
-        temperature: 0.7,
-        do_sample: false,
-        top_k: 50,
-      });
-      console.log(result[0].generated_text.split("assistant\n")[1]);
-      const response = result[0].generated_text.split("assistant\n")[1];
-      document.querySelector(".response").textContent = response;
+      // const result = await generator(prompt, {
+      //   max_new_tokens: 100,
+      //   temperature: 0.7,
+      //   do_sample: false,
+      //   top_k: 50,
+      // });
+      // console.log(result[0].generated_text.split("assistant\n")[1]);
+      // const response = result[0].generated_text.split("assistant\n")[1];
+      document.querySelector(".response").textContent = response1;
     }, 1000);
   }
 })();

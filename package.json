@@ -10,5 +10,9 @@
   },
   "devDependencies": {
     "vite": "^5.2.0"
+  },
+  "dependencies": {
+    "@xenova/transformers": "^2.17.1",
+    "openai": "^4.43.0"
   }
 }
