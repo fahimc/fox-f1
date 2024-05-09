@@ -72,121 +72,122 @@ class MyTextToSpeechPipeline {
     return speaker_embeddings;
   }
 }
-
-// Mapping of cached speaker embeddings
-const speaker_embeddings_cache = new Map();
-const DEFAULT_SPEAKER = "cmu_us_slt_arctic-wav-arctic_a0001";
-const [tokenizer, model, vocoder] = await MyTextToSpeechPipeline.getInstance(
-  (x) => {
-    // We also add a progress callback so that we can track model loading.
-    self.postMessage(x);
-  }
-);
-// Load the speaker embeddings
-let speaker_embeddings = speaker_embeddings_cache.get(DEFAULT_SPEAKER);
-
-if (speaker_embeddings === undefined) {
-  speaker_embeddings = await MyTextToSpeechPipeline.getSpeakerEmbeddings(
-    DEFAULT_SPEAKER
+(async () => {
+  // Mapping of cached speaker embeddings
+  const speaker_embeddings_cache = new Map();
+  const DEFAULT_SPEAKER = "cmu_us_slt_arctic-wav-arctic_a0001";
+  const [tokenizer, model, vocoder] = await MyTextToSpeechPipeline.getInstance(
+    (x) => {
+      // We also add a progress callback so that we can track model loading.
+      self.postMessage(x);
+    }
   );
-  speaker_embeddings_cache.set(DEFAULT_SPEAKER, speaker_embeddings);
-}
+  // Load the speaker embeddings
+  let speaker_embeddings = speaker_embeddings_cache.get(DEFAULT_SPEAKER);
 
-// Listen for messages from the main thread
-self.addEventListener("message", async (event) => {
-  if (event.data.type === "audio") {
-    // Load the pipeline
-    // Tokenize the input
-    const { input_ids } = tokenizer(event.data.text);
-
-    // Generate the waveform
-    const { waveform } = await model.generate_speech(
-      input_ids,
-      speaker_embeddings,
-      { vocoder }
+  if (speaker_embeddings === undefined) {
+    speaker_embeddings = await MyTextToSpeechPipeline.getSpeakerEmbeddings(
+      DEFAULT_SPEAKER
     );
-
-    // Encode the waveform as a WAV file
-    const wav = encodeWAV(waveform.data);
-    // Send the output back to the main thread
-    self.postMessage({
-      status: "audio_complete",
-      output: new Blob([wav], { type: "audio/wav" }),
-    });
+    speaker_embeddings_cache.set(DEFAULT_SPEAKER, speaker_embeddings);
   }
-});
 
-// Function to handle incoming messages from the main thread
-self.addEventListener("message", function (event) {
-  // Retrieve data from the message
-  const data = event.data;
+  // Listen for messages from the main thread
+  self.addEventListener("message", async (event) => {
+    if (event.data.type === "audio") {
+      // Load the pipeline
+      // Tokenize the input
+      const { input_ids } = tokenizer(event.data.text);
 
-  // Check if the message is requesting the current time
-  if (data === "getTime") {
-    // Get the current time
-    const currentTime = new Date().toLocaleTimeString();
-    // Convert the current time to words
-    const hours = new Date().getHours();
-    const minutes = new Date().getMinutes();
-    const timeInWords = convertTimeToWords(hours, minutes);
+      // Generate the waveform
+      const { waveform } = await model.generate_speech(
+        input_ids,
+        speaker_embeddings,
+        { vocoder }
+      );
 
-    // Send the time in words back to the main thread
-    self.postMessage(timeInWords);
-
-    // Function to convert time to words
-    function convertTimeToWords(hours, minutes) {
-      const hoursInWords = convertNumberToWords(hours % 12 || 12);
-      const minutesInWords = convertNumberToWords(minutes);
-      const amOrPm = hours < 12 ? "" : "";
-
-      if (minutes === 0) {
-        return `${hoursInWords} o'clock ${amOrPm}`;
-      } else if (minutes < 10) {
-        return `${hoursInWords} oh ${minutesInWords} ${amOrPm}`;
-      } else {
-        return `${hoursInWords} ${minutesInWords} ${amOrPm}`;
-      }
+      // Encode the waveform as a WAV file
+      const wav = encodeWAV(waveform.data);
+      // Send the output back to the main thread
+      self.postMessage({
+        status: "audio_complete",
+        output: new Blob([wav], { type: "audio/wav" }),
+      });
     }
+  });
 
-    // Function to convert number to words
-    function convertNumberToWords(number) {
-      const units = [
-        "",
-        "one",
-        "two",
-        "three",
-        "four",
-        "five",
-        "six",
-        "seven",
-        "eight",
-        "nine",
-        "ten",
-        "eleven",
-        "twelve",
-        "thirteen",
-        "fourteen",
-        "fifteen",
-        "sixteen",
-        "seventeen",
-        "eighteen",
-        "nineteen",
-      ];
-      const tens = ["", "", "twenty", "thirty", "forty", "fifty"];
+  // Function to handle incoming messages from the main thread
+  self.addEventListener("message", function (event) {
+    // Retrieve data from the message
+    const data = event.data;
 
-      if (number < 20) {
-        return units[number];
-      } else {
-        const tensDigit = Math.floor(number / 10);
-        const unitsDigit = number % 10;
-        return `${tens[tensDigit]} ${units[unitsDigit]}`;
+    // Check if the message is requesting the current time
+    if (data === "getTime") {
+      // Get the current time
+      const currentTime = new Date().toLocaleTimeString();
+      // Convert the current time to words
+      const hours = new Date().getHours();
+      const minutes = new Date().getMinutes();
+      const timeInWords = convertTimeToWords(hours, minutes);
+
+      // Send the time in words back to the main thread
+      self.postMessage(timeInWords);
+
+      // Function to convert time to words
+      function convertTimeToWords(hours, minutes) {
+        const hoursInWords = convertNumberToWords(hours % 12 || 12);
+        const minutesInWords = convertNumberToWords(minutes);
+        const amOrPm = hours < 12 ? "" : "";
+
+        if (minutes === 0) {
+          return `${hoursInWords} o'clock ${amOrPm}`;
+        } else if (minutes < 10) {
+          return `${hoursInWords} oh ${minutesInWords} ${amOrPm}`;
+        } else {
+          return `${hoursInWords} ${minutesInWords} ${amOrPm}`;
+        }
       }
-    }
 
-    // Send the current time back to the main thread
-    self.postMessage({
-      status: "time",
-      timeInWords,
-    });
-  }
-});
+      // Function to convert number to words
+      function convertNumberToWords(number) {
+        const units = [
+          "",
+          "one",
+          "two",
+          "three",
+          "four",
+          "five",
+          "six",
+          "seven",
+          "eight",
+          "nine",
+          "ten",
+          "eleven",
+          "twelve",
+          "thirteen",
+          "fourteen",
+          "fifteen",
+          "sixteen",
+          "seventeen",
+          "eighteen",
+          "nineteen",
+        ];
+        const tens = ["", "", "twenty", "thirty", "forty", "fifty"];
+
+        if (number < 20) {
+          return units[number];
+        } else {
+          const tensDigit = Math.floor(number / 10);
+          const unitsDigit = number % 10;
+          return `${tens[tensDigit]} ${units[unitsDigit]}`;
+        }
+      }
+
+      // Send the current time back to the main thread
+      self.postMessage({
+        status: "time",
+        timeInWords,
+      });
+    }
+  });
+})();
