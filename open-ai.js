@@ -168,9 +168,34 @@ export class OpenAi {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
         });
+        const videoDevices = await navigator.mediaDevices.enumerateDevices();
         const videoElement = document.querySelector("#camera-video");
-        videoElement.srcObject = stream;
+        const backCamera = videoDevices.find(
+          (device) =>
+            device.kind === "videoinput" &&
+            device.label.toLowerCase().includes("back")
+        );
+        if (backCamera) {
+          const constraints = { video: { deviceId: backCamera.deviceId } };
+          const backStream = await navigator.mediaDevices.getUserMedia(
+            constraints
+          );
+          videoElement.srcObject = backStream;
+        } else {
+          console.log("Back camera not found");
+          videoElement.srcObject = stream;
+        }
+
         videoElement.autoplay = true;
+        setInterval(() => {
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d");
+          canvas.width = videoElement.videoWidth;
+          canvas.height = videoElement.videoHeight;
+          context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+          const imageDataURL = canvas.toDataURL();
+          document.querySelector("#camera-image").src = imageDataURL;
+        }, 100);
         document.querySelector(".camera-screen").classList.remove("hide");
         resolve("Camera opened");
       } catch (error) {
