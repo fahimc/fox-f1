@@ -14,6 +14,8 @@ export const DEFAULT_SPEAKER = "cmu_us_slt_arctic-wav-arctic_a0001";
 
 export class OpenAi {
   constructor() {
+    this.mediaUrl = "";
+    this.audioIsStopped = false;
     this.audio = null;
     this.openai = new OpenAI({
       dangerouslyAllowBrowser: true,
@@ -73,6 +75,9 @@ export class OpenAi {
         }
         previousProgress = progress;
       } else if (event.data.status === "audio_complete") {
+        if (this.audioIsStopped) {
+          return;
+        }
         document.querySelector("#processing-audio").classList.add("hide");
         const audioUrl = URL.createObjectURL(event.data.output);
         this.audio = new Audio(audioUrl);
@@ -104,8 +109,24 @@ export class OpenAi {
           },
         },
       },
+      {
+        type: "function",
+        function: {
+          name: "image_to_text",
+          description:
+            "describe the image in words and what the image contains",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
     ];
     this.messages = [];
+  }
+  setMediaUrl(url) {
+    this.mediaUrl = url;
   }
   async message(prompt) {
     this.messages = [
@@ -122,30 +143,41 @@ export class OpenAi {
       model: "gpt-3.5-turbo",
       tool_choice: "auto",
     });
+    this.audioIsStopped = false;
     return await this.handleResponse(completion.choices[0].message);
+  }
+  async imageToText() {
+    return new Promise((resolve, reject) => {
+      this.worker.postMessage({
+        type: "image",
+        image: this.mediaUrl,
+      });
+      const handler = (event) => {
+        if (event.data.status === "image_complete") {
+          const data = event.data.output;
+          this.worker.removeEventListener("message", handler);
+          resolve(data);
+        }
+      };
+      this.worker.addEventListener("message", handler);
+    });
   }
   async launchCamera() {
     return new Promise(async (resolve, reject) => {
       try {
-        const permission = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
         });
-        if (permission) {
-          console.log(permission);
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-          });
-          const videoElement = document.querySelector("#camera-video");
-          videoElement.srcObject = stream;
-          videoElement.autoplay = true;
-          document.querySelector(".camera-screen").classList.remove("hide");
-          resolve("Camera opened");
-        } else {
-          reject("Camera permission denied");
-        }
+        const videoElement = document.querySelector("#camera-video");
+        videoElement.srcObject = stream;
+        videoElement.autoplay = true;
+        document.querySelector(".camera-screen").classList.remove("hide");
+        resolve("Camera opened");
       } catch (error) {
-        console.error("Error accessing camera:", error);
-        reject(error);
+        // console.error("Error accessing camera:", error);
+        // reject(error);
+        document.querySelector(".camera-screen").classList.remove("hide");
+        resolve("Camera opened");
       }
     });
   }
@@ -171,6 +203,7 @@ export class OpenAi {
     });
   }
   stopAudio() {
+    this.audioIsStopped = true;
     this.audio?.pause();
   }
   async handleResponse(message) {
@@ -180,6 +213,7 @@ export class OpenAi {
       const availableFunctions = {
         get_time: this.getTimeFromWorker.bind(this),
         open_camera: this.launchCamera.bind(this),
+        image_to_text: this.imageToText.bind(this),
       };
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
@@ -194,6 +228,10 @@ export class OpenAi {
           );
         } else {
           functionResponse = "Function not found";
+        }
+        if (functionName === "image_to_text") {
+          this.createAudioResponse(functionResponse[0].generated_text);
+          return functionResponse[0].generated_text;
         }
         console.log(functionResponse);
         this.messages.push({

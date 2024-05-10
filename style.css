@@ -193,6 +193,19 @@ input {
   border-radius: 20px;
   padding: 20px;
 }
+.camera-screen {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: black;
+}
+#camera-video {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
 @media (min-width: 801px) {
   .logo.animate {
     width: 150px;

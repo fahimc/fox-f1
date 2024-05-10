@@ -7,7 +7,7 @@ env.allowLocalModels = false;
 import { OpenAi } from "./open-ai.js";
 let openAiInstance;
 const SpeechRecognition =
-  window.SpeechRecognition || window.webkitSpeechRecognition;
+  window.speechRecognition || window.webkitSpeechRecognition;
 let recognition = new SpeechRecognition();
 
 // Preload the sound effect
@@ -26,6 +26,7 @@ const audioList = [
 let currentThinkAudioIndex = 0;
 
 const setupButton = document.querySelector("#setup-button");
+const savePicButton = document.querySelector("#save-pic");
 const saveSettingsButton = document.querySelector("#save-settings");
 const timeElement = document.querySelector(".time");
 setInterval(() => {
@@ -62,10 +63,15 @@ if (localStorage.getItem("open-ai-key")) {
   openAiInstance = new OpenAi();
 }
 
+savePicButton.addEventListener("click", () => {
+  // const file = input.files[0];
+  //   const url = URL.createObjectURL(file);
+  const url = document.querySelector("#camera-image").src;
+  openAiInstance.setMediaUrl(url);
+});
 saveSettingsButton.addEventListener("click", () => {
   const keyValue = document.querySelector("#open-ai-key").value;
   if (!keyValue) return;
-  console.log("Key Value:", keyValue);
   localStorage.setItem("open-ai-key", keyValue);
   readyScreen();
   openAiInstance = new OpenAi();
@@ -120,6 +126,7 @@ let timer;
 
   recognition.addEventListener("result", handleSpeechResult);
   function startSpeechRecognition() {
+    openAiInstance.stopAudio();
     document.querySelector(".response").textContent = "";
     recognition.start();
     // Play the sound effect

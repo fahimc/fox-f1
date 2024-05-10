@@ -4,11 +4,50 @@ import {
   AutoTokenizer,
   SpeechT5ForTextToSpeech,
   SpeechT5HifiGan,
+  pipeline,
 } from "@xenova/transformers";
 import { encodeWAV } from "./utils/utils.js";
 
 // Disable local model checks
 env.allowLocalModels = false;
+
+// Define model factories
+// Ensures only one model is created of each type
+class PipelineFactory {
+  static task = null;
+  static model = null;
+
+  // NOTE: instance stores a promise that resolves to the pipeline
+  static instance = null;
+
+  constructor(tokenizer, model) {
+    this.tokenizer = tokenizer;
+    this.model = model;
+  }
+
+  /**
+   * Get pipeline instance
+   * @param {*} progressCallback
+   * @returns {Promise}
+   */
+  static getInstance(progressCallback = null) {
+    if (this.task === null || this.model === null) {
+      throw Error("Must set task and model");
+    }
+    if (this.instance === null) {
+      this.instance = pipeline(this.task, this.model, {
+        progress_callback: progressCallback,
+      });
+    }
+
+    return this.instance;
+  }
+}
+
+class ImageToTextPipelineFactory extends PipelineFactory {
+  static task = "image-to-text";
+  static model = "Xenova/vit-gpt2-image-captioning";
+}
 
 // Use the Singleton pattern to enable lazy construction of the pipeline.
 class MyTextToSpeechPipeline {
@@ -72,6 +111,7 @@ class MyTextToSpeechPipeline {
     return speaker_embeddings;
   }
 }
+
 (async () => {
   // Mapping of cached speaker embeddings
   const speaker_embeddings_cache = new Map();
@@ -82,6 +122,15 @@ class MyTextToSpeechPipeline {
       self.postMessage(x);
     }
   );
+
+  const imagePipelineInstance = await ImageToTextPipelineFactory.getInstance(
+    (x) => {
+      // We also add a progress callback so that we can track model loading.
+      self.postMessage(x);
+    }
+  );
+
+  console.log(imagePipelineInstance);
   // Load the speaker embeddings
   let speaker_embeddings = speaker_embeddings_cache.get(DEFAULT_SPEAKER);
 
@@ -94,6 +143,16 @@ class MyTextToSpeechPipeline {
 
   // Listen for messages from the main thread
   self.addEventListener("message", async (event) => {
+    if (event.data.type === "image") {
+      const response = await imagePipelineInstance(event.data.image);
+      // const decodedText = pipeline.tokenizer.decode(beams[0].output_token_ids, {
+      //     skip_special_tokens: true,
+      // })
+      self.postMessage({
+        status: "image_complete",
+        output: response,
+      });
+    }
     if (event.data.type === "audio") {
       // Load the pipeline
       // Tokenize the input
