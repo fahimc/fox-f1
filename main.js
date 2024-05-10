@@ -58,6 +58,7 @@ function readyScreen() {
 }
 if (localStorage.getItem("open-ai-key")) {
   readyScreen();
+
   openAiInstance = new OpenAi();
 }
 
@@ -116,6 +117,7 @@ let timer;
   speechStopButton.addEventListener("mousedown", () =>
     openAiInstance.stopAudio()
   );
+
   recognition.addEventListener("result", handleSpeechResult);
   function startSpeechRecognition() {
     document.querySelector(".response").textContent = "";

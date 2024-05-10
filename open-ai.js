@@ -23,12 +23,41 @@ export class OpenAi {
     this.worker = new Worker(new URL("worker.js", import.meta.url), {
       type: "module",
     });
+    const modelFileProgressList = [];
+    let previousProgress = 0;
     const progressElement = document.querySelector(".progress");
     this.worker.postMessage("getTime");
     this.worker.addEventListener("message", (event) => {
       const time = event.data;
       if (event.data.status === "progress") {
-        let progress = event.data.progress;
+        if (
+          !modelFileProgressList.find((item) => item.file === event.data.file)
+        )
+          modelFileProgressList.push({
+            file: event.data.file,
+            progress: event.data.progress,
+          });
+        const item = modelFileProgressList.find(
+          (item) => item.file === event.data.file
+        );
+        item.progress = event.data.progress;
+        // {
+        //     "status": "progress",
+        //     "name": "Xenova/speecht5_tts",
+        //     "file": "generation_config.json",
+        //     "progress": 100,
+        //     "loaded": 185,
+        //     "total": 185
+        // }
+        const lowestProgressItem = modelFileProgressList.reduce(
+          (minItem, currentItem) => {
+            return currentItem.progress < minItem.progress
+              ? currentItem
+              : minItem;
+          }
+        );
+
+        let progress = lowestProgressItem.progress;
         if (progress < 100) {
           progressElement.style.width = `${progress}%`;
           document.querySelector(".loading-message").style.display = "block";
@@ -42,6 +71,7 @@ export class OpenAi {
         if (progress >= 100) {
           document.querySelector(".response").classList.remove("hide");
         }
+        previousProgress = progress;
       } else if (event.data.status === "audio_complete") {
         document.querySelector("#processing-audio").classList.add("hide");
         const audioUrl = URL.createObjectURL(event.data.output);
@@ -55,6 +85,18 @@ export class OpenAi {
         function: {
           name: "get_time",
           description: "return the current time",
+          parameters: {
+            type: "object",
+            properties: {},
+            required: [],
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "open_camera",
+          description: "open the camera",
           parameters: {
             type: "object",
             properties: {},
@@ -81,6 +123,31 @@ export class OpenAi {
       tool_choice: "auto",
     });
     return await this.handleResponse(completion.choices[0].message);
+  }
+  async launchCamera() {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const permission = await navigator.mediaDevices.getUserMedia({
+          video: true,
+        });
+        if (permission) {
+          console.log(permission);
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+          });
+          const videoElement = document.querySelector("#camera-video");
+          videoElement.srcObject = stream;
+          videoElement.autoplay = true;
+          document.querySelector(".camera-screen").classList.remove("hide");
+          resolve("Camera opened");
+        } else {
+          reject("Camera permission denied");
+        }
+      } catch (error) {
+        console.error("Error accessing camera:", error);
+        reject(error);
+      }
+    });
   }
   async getTimeFromWorker() {
     return new Promise((resolve, reject) => {
@@ -112,6 +179,7 @@ export class OpenAi {
     if (message.tool_calls) {
       const availableFunctions = {
         get_time: this.getTimeFromWorker.bind(this),
+        open_camera: this.launchCamera.bind(this),
       };
       for (const toolCall of toolCalls) {
         const functionName = toolCall.function.name;
