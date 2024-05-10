@@ -15,6 +15,7 @@ export const DEFAULT_SPEAKER = "cmu_us_slt_arctic-wav-arctic_a0001";
 export class OpenAi {
   constructor() {
     this.mediaUrl = "";
+    this.cameraInterval = undefined;
     this.audioIsStopped = false;
     this.audio = null;
     this.openai = new OpenAI({
@@ -129,6 +130,7 @@ export class OpenAi {
     this.mediaUrl = url;
   }
   async message(prompt) {
+    this.stopCamera();
     this.messages = [
       {
         role: "system",
@@ -162,6 +164,10 @@ export class OpenAi {
       this.worker.addEventListener("message", handler);
     });
   }
+  stopCamera() {
+    document.querySelector(".camera-screen").classList.add("hide");
+    clearInterval(this.cameraInterval);
+  }
   async launchCamera() {
     return new Promise(async (resolve, reject) => {
       try {
@@ -187,7 +193,8 @@ export class OpenAi {
         }
 
         videoElement.autoplay = true;
-        setInterval(() => {
+        clearInterval(this.cameraInterval);
+        this.cameraInterval = setInterval(() => {
           const canvas = document.createElement("canvas");
           const context = canvas.getContext("2d");
           canvas.width = videoElement.videoWidth;
